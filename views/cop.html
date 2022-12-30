@@ -31,17 +31,15 @@
 
         // Fetch userId from the data-atribute of the body tag
         const userId = document.body.getAttribute("data-userId");
-        // Join a room, roomname is the userId itself!
         socket.emit("join", {
             userId: userId
         });
 
-        // Empty variables to store information. This will get filled later
         let requestDetails = {};
         let copDetails = {};
         let map, marker;
 
-        // First send a GET request using Axios and get the cop's details and save it
+        // Send a GET request using Axios and get the cop's details and save it
         axios.get(`/cops/info?userId=${userId}`)
             .then( (response) => {
                 copDetails = response.data.copDetails;
@@ -73,8 +71,7 @@
                 // Use MapBox geo-coding API
                 map.addControl(L.mapbox.geocoderControl("mapbox.places", {
                     autocomplete: true,
-                }).on("select", (data) => { // This function runs when a place is selected
-                    // data contains the geocding results
+                }).on("select", (data) => { 
                     console.log(data);
 
                     // Set the marker to new location
@@ -89,7 +86,7 @@
         socket.on("request-for-help", (eventData) => {
             requestDetails = eventData; // Save request details
 
-            // display student info
+            // Display student info
             document.getElementById("notification").innerHTML =
             `Student ${requestDetails.civilianId} is in danger!
             They're at ${requestDetails.location.address}`;
