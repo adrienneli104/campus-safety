@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Student {{ userId }} </title>
+    <link href="https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css" rel="stylesheet" />
+</head>
+
+<body data-userId="{{ userId }}">
+    <h1> Hello, {{ userId }} </h1>
+
+    <h4 id="notification"></h4>
+    <button onclick="requestForHelp()">
+        Request for help
+    </button>
+
+    <div id="map" style="width: 600px; height: 400px;">
+        <!-- Load map here -->
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js"></script>
+
+    <script type="text/javascript">
+        const socket = io();
+
+        const userId = document.body.getAttribute("data-userId");
+        socket.emit("join", {
+            userId: userId
+        });
+
+        let requestDetails = {};
+        let copDetails = {};
+        let map, marker;
+
+        requestDetails = {
+            StudentId: userId,
+            location: {
+                address: "Indiranagar, Bengaluru, Karnataka 560038, India",
+                latitude: 12.9718915,
+                longitude: 77.64115449999997
+            }
+        }
+
+        function requestForHelp() { 
+            socket.emit("request-for-help", requestDetails);
+        }
+
+        socket.on("request-accepted", (eventData) => {
+            copDetails = eventData;
+
+            // Display cop address
+            document.getElementById("notification").innerHTML =
+                `${copDetails.displayName} is near ${copDetails.location.address} and will be coming shortly.
+                Contact their phone number ${copDetails.phone}`;
+
+            // Show cop location on the map
+            L.marker([
+                copDetails.location.latitude,
+                copDetails.location.longitude
+            ], {
+                icon: L.icon({
+                    iconUrl: "/images/cop.png",
+                    iconSize: [60, 28]
+                })
+            }).addTo(map);
+        });
+
+        L.mapbox.accessToken = "pk.eyJ1IjoiYWRyaWVubmVsaTEwNCIsImEiOiJjbGM5ZDY1M3EwaXo1M3FsaDZkNG5oOHg5In0.bQhnIxyyvqSbO7paTh_M8A";
+    
+        map = L.mapbox
+        .map('map', "mapbox.streets") // Load the map and give it a default style
+        .setView([12.9718915, 77.64115449999997], 15) //Load the map and set it to a given lat-lng
+        .addLayer(
+        L.mapbox.styleLayer(
+        'mapbox://styles/mapbox/streets-v12'
+        )
+        );
+        marker = L.marker([12.9718915, 77.64115449999997]).addTo(map); // Display a default marker
+        // create the marker
+        new mapboxgl.Marker()
+        .setLngLat([-0.1404545, 51.5220163])
+        .addTo(map);
+        // Use MapBox geo-coding API
+        map.addControl(L.mapbox.geocoderControl("mapbox.places", {
+            autocomplete: true,
+        }).on("select", (data) => { 
+            console.log(data); 
+
+            // Extract address and coordinates from the results and save it
+            requestDetails.location = {
+                address: data.feature["place_name"],
+                latitude: data.feature.center[1],
+                longitude: data.feature.center[0]
+            };
+
+            marker.setLatLng([data.feature.center[1], data.feature.center[0]]); // Set the marker to new location
+        }));
+    </script>
+</body>
+
+</html>
